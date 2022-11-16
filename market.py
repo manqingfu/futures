@@ -22,33 +22,39 @@ class Market(Model):
         
         self.schedule=RandomActivation(self)
         self.agent_list=[]
+        # y=list(np.random.normal(2.052, 3.82**0.5, 2*N))
+        # y=[abs(round(i,1)) for i in y if 0<=i<=10]
         for i in range(N):
             #### important
-            # cash=random.randint(0,10000)
-            horizon=random.randint(-1,1)
+            horizon=random.choice([-1,1])
+            # print(horizon,y[i])
             agent=Speculator(i,self,cash=1000000,horizon=horizon)
-            self.agent_list.append(agent)
             self.schedule.add(agent=agent)
+            self.agent_list.append(agent)
 
         long=pd.DataFrame({'long':[],'price':[],'agent':[]})
         short=pd.DataFrame({'short':[],'price':[],'agent':[]})
         self.this_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
         self.next_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
-        self.predict=[[self.price_list.iloc[self.time-1]['act_settlement']],[self.price_list.iloc[self.time-1]['con_settlement']]]
+        self.predict=[[self.price_list.iloc[self.time-1]['con_settlement']],[self.price_list.iloc[self.time-1]['act_settlement']]]
 
     def step(self):
-        long=pd.DataFrame({'long':[],'price':[],'agent':[]})
-        short=pd.DataFrame({'short':[],'price':[],'agent':[]})
-        self.this_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
-        self.next_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
-        self.schedule.step()
-        print(self.this_month_table)
-        print(self.next_month_table)
-        self.pricing()
-        print(self.predict)
-        # self.liquidation()
-        self.guarding()
-
+        for i in range(1,len(self.price_list)):
+            print(i)
+            if self.settlement:
+                self.delivery()
+            long=pd.DataFrame({'long':[],'price':[],'agent':[]})
+            short=pd.DataFrame({'short':[],'price':[],'agent':[]})
+            self.this_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
+            self.next_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
+            self.schedule.step()
+            # print(self.this_month_table)
+            # print(self.next_month_table)
+            self.pricing()
+            self.guarding()
+            self.time+=1
+        for a in self.agent_list:
+            print(a.unique_id,a.cash+a.deposit, a.horizon)
 
     def bid(self,position,price, agentid):
         ## 之后想想办法把这个函数写简单一点
@@ -82,10 +88,12 @@ class Market(Model):
         this_money=0
         this_hands=0
         p,q=0,0 #long, short
+        # print(type(self.this_month_table[0].iloc[p]['agent'].item()))
         while p<len(self.this_month_table[0]) and q<len(self.this_month_table[1]):
-            # print(p,q)
+            # print(int(self.this_month_table[0].iloc[p]['agent']),int(self.this_month_table[1].iloc[q]['agent']))
             if self.this_month_table[0].iloc[p]['price']<self.this_month_table[1].iloc[q]['price']:
                 q+=1
+                continue
             else:
                 if self.this_month_table[0].iloc[p]['long']>=abs(self.this_month_table[1].iloc[q]['short']):
                     self.agent_list[int(self.this_month_table[0].iloc[p]['agent'])].deal(-self.this_month_table[1].iloc[q]['short'],self.this_month_table[0].iloc[p]['price'],0)
@@ -109,8 +117,10 @@ class Market(Model):
         next_hands=0
         p,q=0,0 #long, short
         while p<len(self.next_month_table[0]) and q<len(self.next_month_table[1]):
+            # print(int(self.next_month_table[0].iloc[p]['agent']),int(self.next_month_table[1].iloc[q]['agent']))
             if self.next_month_table[0].iloc[p]['price']<self.next_month_table[1].iloc[q]['price']:
                 q+=1
+                continue
             else:
                 if self.next_month_table[0].iloc[p]['long']>=abs(self.next_month_table[1].iloc[q]['short']):
                     self.agent_list[int(self.next_month_table[0].iloc[p]['agent'])].deal(abs(self.next_month_table[1].iloc[q]['short']),self.next_month_table[0].iloc[p]['price'],1)
@@ -121,30 +131,32 @@ class Market(Model):
                     self.next_month_table[1].iloc[q]['short']=0
                     q+=1
                 else:
-                    self.agent_list[int(self.next_month_table[0].iloc[p]['agent'])].deal(self.next_month_table[0].iloc[p]['long'],self.next_month_table[1].iloc[p]['price'],1)
-                    self.agent_list[int(self.next_month_table[1].iloc[q]['agent'])].deal(self.next_month_table[0].iloc[p]['long'],self.next_month_table[1].iloc[p]['price'],1)
+                    self.agent_list[int(self.next_month_table[0].iloc[p]['agent'])].deal(self.next_month_table[0].iloc[p]['long'],self.next_month_table[0].iloc[p]['price'],1)
+                    self.agent_list[int(self.next_month_table[1].iloc[q]['agent'])].deal(self.next_month_table[0].iloc[p]['long'],self.next_month_table[0].iloc[p]['price'],1)
                     next_money+=self.next_month_table[0].iloc[p]['long']*self.next_month_table[0].iloc[p]['price']
                     next_hands+=self.next_month_table[0].iloc[p]['long']
                     self.next_month_table[1].iloc[q]['short']+=self.next_month_table[0].iloc[p]['long']
                     self.next_month_table[0].iloc[p]['long']=0
                     p+=1      
         self.predict[1].append(round(next_money/next_hands,1) if next_hands!=0 else self.predict[1][-1])
-
-    # def liquidation(self):
-    #     for agent in self.agent_list:
-    #         agent.liquidation()
     
     def guarding(self):
         for agent in self.agent_list:
             agent.guarding()
 
+    def delivery(self):
+        for agent in self.agent_list:
+            agent.delivery()        
+
 
 if __name__=="__main__":
-    data=pd.read_csv(r'train_data.csv')
+    data=pd.read_csv(r'data.csv')
 
     fr=open("settle_date.txt","rb")
     settle_date=pickle.load(fr)
 
-    market=Market(100,data=data,settle_date=settle_date)
+    market=Market(500,data=data,settle_date=settle_date)
     market.step()
-    # market.step()
+    print(market.predict)
+    file=open("predict.txt","wb")
+    pickle.dump(market.predict,file)
