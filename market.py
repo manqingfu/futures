@@ -40,21 +40,23 @@ class Market(Model):
 
     def step(self):
         for i in range(1,len(self.price_list)):
-            print(i)
-            if self.settlement:
-                self.delivery()
+        # for i in range(1,120):
+            print(self.price_list.iloc[i]['date'])
+            self.settlement=True if self.price_list.iloc[self.time]['date'] in self.settle_list else False
             long=pd.DataFrame({'long':[],'price':[],'agent':[]})
             short=pd.DataFrame({'short':[],'price':[],'agent':[]})
             self.this_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
             self.next_month_table=[copy.deepcopy(long),copy.deepcopy(short)]
             self.schedule.step()
-            # print(self.this_month_table)
-            # print(self.next_month_table)
             self.pricing()
             self.guarding()
+            if self.settlement:
+                self.delivery()
             self.time+=1
+            
+        
         for a in self.agent_list:
-            print(a.unique_id,a.cash+a.deposit, a.horizon)
+            print(a.unique_id,a.cash+a.deposit, a.horizon,round((a.Q_value.index(np.max(a.Q_value))+1)/10-5,1),a.Q_value.index(np.max(a.Q_value)))
 
     def bid(self,position,price, agentid):
         ## 之后想想办法把这个函数写简单一点
@@ -111,7 +113,7 @@ class Market(Model):
                     self.this_month_table[1].iloc[q]['short']+=self.this_month_table[0].iloc[p]['long']
                     self.this_month_table[0].iloc[p]['long']=0
                     p+=1      
-        self.predict[0].append(round(this_money/this_hands,1) if this_hands!=0 else self.predict[0][-1])
+        self.predict[0].append(round(this_money/this_hands,1) if this_hands!=0 else self.price_list.iloc[self.time-1]['con_closing'])
 
         next_money=0
         next_hands=0
@@ -138,8 +140,9 @@ class Market(Model):
                     self.next_month_table[1].iloc[q]['short']+=self.next_month_table[0].iloc[p]['long']
                     self.next_month_table[0].iloc[p]['long']=0
                     p+=1      
-        self.predict[1].append(round(next_money/next_hands,1) if next_hands!=0 else self.predict[1][-1])
-    
+        self.predict[1].append(round(next_money/next_hands,1) if next_hands!=0 else self.price_list.iloc[self.time-1]['act_closing'])
+        # print(this_hands,next_hands)
+
     def guarding(self):
         for agent in self.agent_list:
             agent.guarding()
