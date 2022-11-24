@@ -17,10 +17,16 @@ class Market(Model):
 
         self.time=1 #系统日期
         self.settlement=True if self.price_list.iloc[self.time]['date'] in self.settle_list else False
+        self.datetime=self.price_list.iloc[self.time]['date']
+        self.con_deal=0
+        self.act_deal=0
+        self.inflation=0.029
         
         self.schedule=RandomActivation(self)
         self.agent_list=[]
         self.bomb=0
+        self.act_deal=0
+        self.con_deal=0
         for i in range(N):
             horizon=random.choice([-1,1])
             agent=Speculator(i,self,cash=1000000,horizon=horizon)
@@ -35,7 +41,13 @@ class Market(Model):
 
         self.datacollector=DataCollector(
             model_reporters={
-                'bomb':"bomb"
+                'bomb':"bomb",
+                'datetime':"datetime",
+                'act_deal':"act_deal",
+                'con_deal':"con_deal",
+                'act_table':"act_table",
+                'con_table':"con_table",
+                # 'predict':"predict"
             },
             agent_reporters={
                 'unique_id':'unique_id',
@@ -49,6 +61,7 @@ class Market(Model):
         )
 
     def step(self):
+        self.datetime=self.price_list.iloc[self.time]['date']
         print(self.price_list.iloc[self.time]['date'])
         self.settlement=True if self.price_list.iloc[self.time]['date'] in self.settle_list else False
         long=pd.DataFrame({'long':[],'price':[],'agent':[]})
@@ -63,9 +76,10 @@ class Market(Model):
         self.guarding()
         if self.settlement:
             self.delivery()
-        self.time+=1      
-        self.bomb=0
+        print(self.bomb)
         self.datacollector.collect(self)
+        self.bomb=0
+        self.time+=1      
 
 
     def bid(self,position,price, agentid):
@@ -151,6 +165,7 @@ class Market(Model):
                     self.act_table[0].iloc[p]['long']=0
                     p+=1      
         self.predict[1].append(round(next_money/next_hands,1) if next_hands!=0 else self.price_list.iloc[self.time-1]['act_closing'])
+        self.con_deal,self.act_deal=this_hands,next_hands
         print(this_hands,next_hands)
 
     def guarding(self):
@@ -171,16 +186,18 @@ if __name__=="__main__":
     market=Market(500,data=data,settle_date=settle_date)
     # market.step()
     for _ in range(len(data)-1):
-    # for _ in range(150):
+    # for _ in range(300):
         market.step()
     for a in market.agent_list:
         # print(a.Q_reward,a.Q_hands)
-        print(a.unique_id,a.cash+a.deposit, a.horizon,np.unravel_index(a.Q_reward[0].argmax(),a.Q_reward[0].shape),np.unravel_index(a.Q_reward[1].argmax(),a.Q_reward[1].shape))
+        print(a.unique_id,a.cash+a.deposit, a.horizon)
+        # for i in range(len(a.Q_reward)):
+        #     print(np.unravel_index(a.Q_reward[i].argmax(),a.Q_reward[i].shape))
     print(market.predict)
-    file=open("E:\CCDA-PC\code\\futures\\futures\predict1122.txt","wb")
+    file=open("E:\CCDA-PC\code\\futures\\futures\predict1124.txt","wb")
     pickle.dump(market.predict,file)
 
     agent_data=market.datacollector.get_agent_vars_dataframe()
-    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1122.csv",index=False)
+    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1124.csv",index=False)
     model_data=market.datacollector.get_model_vars_dataframe()
-    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1122.csv",index=False)
+    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1124.csv",index=False)
