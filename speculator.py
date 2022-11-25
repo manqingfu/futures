@@ -37,14 +37,14 @@ class Speculator(Agent):
                 self.policy=(position,random.randint(1,5),random.randint(-10,10),1)
                 if t==0:
                     price[t]=round(self.model.price_list.iloc[self.model.time-1]['con_closing']*(100-self.policy[2]*abs(self.horizon))/100,1)
-                else:
+                elif t==1 or self.model.price_list.iloc[self.model.time-1]['date'] in self.model.settle_list:
                     price[t]=round(self.model.price_list.iloc[self.model.time-1]['act_closing']*(100-self.policy[2]*abs(self.horizon))/100,1)
                 hands[t]=math.floor(self.cash*self.policy[1]/(2000*price[t]))
             else: #看跌卖
                 self.policy=(position,random.randint(1,5),random.randint(-10,10),-1)
                 if t==0:
                     price[t]=round(self.model.price_list.iloc[self.model.time-1]['con_closing']*(100+self.policy[2]*abs(self.horizon))/100,1)
-                else:
+                elif t==1 or self.model.price_list.iloc[self.model.time-1]['date'] in self.model.settle_list:
                     price[t]=round(self.model.price_list.iloc[self.model.time-1]['act_closing']*(100+self.policy[2]*abs(self.horizon))/100,1)
                 hands[t]=-math.floor(self.cash*self.policy[1]/(2000*price[t]))   
 

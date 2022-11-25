@@ -194,10 +194,10 @@ if __name__=="__main__":
         # for i in range(len(a.Q_reward)):
         #     print(np.unravel_index(a.Q_reward[i].argmax(),a.Q_reward[i].shape))
     print(market.predict)
-    file=open("E:\CCDA-PC\code\\futures\\futures\predict1124.txt","wb")
+    file=open("E:\CCDA-PC\code\\futures\\futures\predict1125.txt","wb")
     pickle.dump(market.predict,file)
 
     agent_data=market.datacollector.get_agent_vars_dataframe()
-    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1124.csv",index=False)
+    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1125.csv",index=False)
     model_data=market.datacollector.get_model_vars_dataframe()
-    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1124.csv",index=False)
+    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1125.csv",index=False)
