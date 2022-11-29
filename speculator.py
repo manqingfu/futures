@@ -15,6 +15,7 @@ class Speculator(Agent):
         self.long=[0,0] # [con hands, act hands]
         self.short=[0,0]
         self.horizon=horizon
+        # print(self.horizon)
         self.Q_reward=np.zeros(((11,5,21)))
         self.Q_times=np.zeros(((11,5,21)))
         self.Q_r=np.zeros(((11,5,21)))
@@ -95,7 +96,7 @@ class Speculator(Agent):
             else:
                 self.horizon=self.horizon+0.1 if self.horizon<0 else self.horizon-0.1
             return
-        elif con_reward+act_reward>0 and -0.9<=self.horizon<=0.9 and random.random()<0.5:
+        elif con_reward+act_reward>0 and -0.9<=self.horizon<=0.9:
             self.horizon=self.horizon+0.1 if self.horizon>0 else self.horizon-0.1
 
             
@@ -136,7 +137,7 @@ class Speculator(Agent):
         con_reward+=(settle_price[0]-last_settle_price[0])*self.long[0]+(last_settle_price[0]-settle_price[0])*self.short[0]
         act_reward+=(settle_price[1]-last_settle_price[1])*self.long[1]+(last_settle_price[1]-settle_price[1])*self.short[1]
 
-        self.reward(con_reward,act_reward) # reward horizon policy
+        # self.reward(con_reward,act_reward) # reward horizon policy
         self.reward_Q()
 
         self.long[0]+=self.long_bid[0][0]
@@ -159,10 +160,10 @@ class Speculator(Agent):
             self.model.bomb+=1
             self.deposit=0
             self.cash=1000000
-            if -0.1<=self.horizon<=0.1:
-                self.horizon=0.1 if self.horizon<0 else -0.1
-            else:
-                self.horizon=self.horizon+0.1 if self.horizon<0 else self.horizon-0.1   
+            # if -0.1<=self.horizon<=0.1:
+            #     self.horizon=0.1 if self.horizon<0 else -0.1
+            # else:
+            #     self.horizon=self.horizon+0.1 if self.horizon<0 else self.horizon-0.1   
             self.long=[0,0] # [con position, act position]
             self.short=[0,0]
             self.count=0
@@ -189,10 +190,10 @@ class Speculator(Agent):
             self.model.bomb+=1
             self.deposit=0
             self.cash=1000000
-            if -0.1<=self.horizon<=0.1:
-                self.horizon=0.1 if self.horizon<0 else -0.1
-            else:
-                self.horizon=self.horizon+0.1 if self.horizon<0 else self.horizon-0.1  
+            # if -0.1<=self.horizon<=0.1:
+            #     self.horizon=0.1 if self.horizon<0 else -0.1
+            # else:
+            #     self.horizon=self.horizon+0.1 if self.horizon<0 else self.horizon-0.1  
             # print(self.unique_id,self.horizon)          
             self.long=[0,0] # [con position, act position]
             self.short=[0,0]

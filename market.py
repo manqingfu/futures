@@ -28,7 +28,10 @@ class Market(Model):
         self.act_deal=0
         self.con_deal=0
         for i in range(N):
-            horizon=random.choice([-1,1])
+            horizon=random.choice([-1,-0.4,0.4,1])
+            # horizon=round(np.random.rand()*2-1,1)
+            # while horizon==0.0:
+                # horizon=round(np.random.rand()*2-1,1)
             agent=Speculator(i,self,cash=1000000,horizon=horizon)
             self.schedule.add(agent=agent)
             self.agent_list.append(agent)
@@ -186,7 +189,7 @@ if __name__=="__main__":
     market=Market(500,data=data,settle_date=settle_date)
     # market.step()
     for _ in range(len(data)-1):
-    # for _ in range(300):
+    # for _ in range(3):
         market.step()
     for a in market.agent_list:
         # print(a.Q_reward,a.Q_hands)
@@ -194,10 +197,10 @@ if __name__=="__main__":
         # for i in range(len(a.Q_reward)):
         #     print(np.unravel_index(a.Q_reward[i].argmax(),a.Q_reward[i].shape))
     print(market.predict)
-    file=open("E:\CCDA-PC\code\\futures\\futures\predict1125.txt","wb")
+    file=open("E:\CCDA-PC\code\\futures\\futures\predict1129.txt","wb")
     pickle.dump(market.predict,file)
 
     agent_data=market.datacollector.get_agent_vars_dataframe()
-    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1125.csv",index=False)
+    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1129.csv",index=False)
     model_data=market.datacollector.get_model_vars_dataframe()
-    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1125.csv",index=False)
+    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1129.csv",index=False)
