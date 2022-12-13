@@ -28,6 +28,11 @@ class Speculator(Agent):
         self.policy_list=[]
         self.deal_list=[]
 
+    def bid_DQN(self):
+        hands,price=[0,0],[0,0]
+        
+        return hands, price
+
     def bid_duQ(self):
         # 修改了Q——matrix的结构
         hands,price=[0,0],[0,0]
@@ -159,7 +164,7 @@ class Speculator(Agent):
             # print("bomb in ordinary",s,self.cash,self.deposit,self.long,self.short)
             self.model.bomb+=1
             self.deposit=0
-            self.cash=1000000
+            self.cash=self.model.initial_wealth
             # if -0.1<=self.horizon<=0.1:
             #     self.horizon=0.1 if self.horizon<0 else -0.1
             # else:
@@ -189,7 +194,7 @@ class Speculator(Agent):
             # print("bomb after delivery",s,self.cash,self.deposit,self.long,self.short)
             self.model.bomb+=1
             self.deposit=0
-            self.cash=1000000
+            self.cash=self.model.initial_wealth
             # if -0.1<=self.horizon<=0.1:
             #     self.horizon=0.1 if self.horizon<0 else -0.1
             # else:

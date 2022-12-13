@@ -11,9 +11,10 @@ import pickle
 from speculator import *
 
 class Market(Model):
-    def __init__(self, N, data, settle_date):
+    def __init__(self, N, data, settle_date, wealth):
         self.price_list=data
         self.settle_list=settle_date
+        self.initial_wealth=wealth
 
         self.time=1 #系统日期
         self.settlement=True if self.price_list.iloc[self.time]['date'] in self.settle_list else False
@@ -32,7 +33,7 @@ class Market(Model):
             # horizon=round(np.random.rand()*2-1,1)
             # while horizon==0.0:
                 # horizon=round(np.random.rand()*2-1,1)
-            agent=Speculator(i,self,cash=1000000,horizon=horizon)
+            agent=Speculator(i,self,cash=wealth,horizon=horizon)
             self.schedule.add(agent=agent)
             self.agent_list.append(agent)
 
