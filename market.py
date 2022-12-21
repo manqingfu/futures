@@ -11,7 +11,7 @@ import pickle
 from speculator import *
 
 class Market(Model):
-    def __init__(self, N, data, settle_date, wealth):
+    def __init__(self, N, data, settle_date, wealth, horizon_p):
         self.price_list=data
         self.settle_list=settle_date
         self.initial_wealth=wealth
@@ -29,10 +29,11 @@ class Market(Model):
         self.act_deal=0
         self.con_deal=0
         for i in range(N):
-            horizon=random.choice([-1,-0.4,0.4,1])
+            # horizon=random.choice([-1,-0.4,0.4,1])
             # horizon=round(np.random.rand()*2-1,1)
             # while horizon==0.0:
                 # horizon=round(np.random.rand()*2-1,1)
+            horizon = random.choices([-1,-0.4,0.4,1], weights=horizon_p, k=1)[0]
             agent=Speculator(i,self,cash=wealth,horizon=horizon)
             self.schedule.add(agent=agent)
             self.agent_list.append(agent)
@@ -59,14 +60,12 @@ class Market(Model):
                 'cash':"cash",
                 'policy':"policy",
                 'horizon':"horizon",
-                # 'Q_reward':"Q_reward",
-                # 'Q_hands':"Q_hands"
             }
         )
 
     def step(self):
         self.datetime=self.price_list.iloc[self.time]['date']
-        print(self.price_list.iloc[self.time]['date'])
+        # print(self.price_list.iloc[self.time]['date'])
         self.settlement=True if self.price_list.iloc[self.time]['date'] in self.settle_list else False
         long=pd.DataFrame({'long':[],'price':[],'agent':[]})
         short=pd.DataFrame({'short':[],'price':[],'agent':[]})
@@ -80,7 +79,7 @@ class Market(Model):
         self.guarding()
         if self.settlement:
             self.delivery()
-        print(self.bomb)
+        # print(self.bomb)
         self.datacollector.collect(self)
         self.bomb=0
         self.time+=1      
@@ -170,7 +169,7 @@ class Market(Model):
                     p+=1      
         self.predict[1].append(round(next_money/next_hands,1) if next_hands!=0 else self.price_list.iloc[self.time-1]['act_closing'])
         self.con_deal,self.act_deal=this_hands,next_hands
-        print(this_hands,next_hands)
+        # print(this_hands,next_hands)
 
     def guarding(self):
         for agent in self.agent_list:
@@ -180,28 +179,52 @@ class Market(Model):
         for agent in self.agent_list:
             agent.delivery()        
 
+    def acc(self):
+        data=self.price_list.iloc[-30:,:]
+        con=data['con_settlement'].values.tolist()
+        pre=self.predict[0][-30:]
+
+        mae,mape,smape,mse,rmse,msle=0,0,0,0,0,0
+        for i in range(30):
+            mae+=abs(pre[i]-con[-30+i])
+            mape+=abs(con[-30+i]-pre[i])*100/con[-30+i]
+            smape+=abs(pre[i]-con[-30+i])/((pre[i]+con[-30+i])/2)
+            mse+=(pre[i]-con[-30+i])**2
+            msle+=(np.log(1+con[-30+i])-np.log(1+pre[i]))**2
+
+        print(mae/30,mape/30,smape/30,mse/30,msle/30)
+        return [mae/30,mape/30,smape/30,mse/30,msle/30]
+    
+def comparison(formal,n):
+    count=0
+    for i in range(len(formal)):
+        if formal[i]>n[i]:
+            count+=1
+    return True if count>2 else False
+
 
 if __name__=="__main__":
     data=pd.read_csv(r'E:\CCDA-PC\code\futures\futures\data.csv')
-
     fr=open("E:\CCDA-PC\code\\futures\\futures\settle_date.txt","rb")
     settle_date=pickle.load(fr)
-
-    market=Market(500,data=data,settle_date=settle_date)
-    # market.step()
-    for _ in range(len(data)-1):
-    # for _ in range(3):
-        market.step()
-    for a in market.agent_list:
-        # print(a.Q_reward,a.Q_hands)
-        print(a.unique_id,a.cash+a.deposit, a.horizon)
-        # for i in range(len(a.Q_reward)):
-        #     print(np.unravel_index(a.Q_reward[i].argmax(),a.Q_reward[i].shape))
-    print(market.predict)
-    file=open("E:\CCDA-PC\code\\futures\\futures\predict1129.txt","wb")
-    pickle.dump(market.predict,file)
-
-    agent_data=market.datacollector.get_agent_vars_dataframe()
-    agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1129.csv",index=False)
-    model_data=market.datacollector.get_model_vars_dataframe()
-    model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1129.csv",index=False)
+    threshold=[8.953,1.326,0.013,224.355,0.000505]
+    horizon_p=[random.randint(1,10),random.randint(1,10),random.randint(1,10),random.randint(1,10)]
+    for _ in range(100):
+        print(horizon_p)
+        market=Market(500,data=data,settle_date=settle_date,wealth=1000000,horizon_p=horizon_p)
+        for _ in range(len(data)-1):
+        # for _ in range(3):
+            market.step()
+        tmp=market.acc()
+        
+        if comparison(threshold,tmp):
+            print(horizon_p,tmp,threshold)
+            file=open("E:\CCDA-PC\code\\futures\\futures\predict1221.txt","wb")
+            pickle.dump(market.predict,file)
+            agent_data=market.datacollector.get_agent_vars_dataframe()
+            agent_data.to_csv("E:\CCDA-PC\code\\futures\\futures\\agent_data1221.csv",index=False)
+            model_data=market.datacollector.get_model_vars_dataframe()
+            model_data.to_csv("E:\CCDA-PC\code\\futures\\futures\model_data1221.csv",index=False)
+        
+            threshold=tmp
+        horizon_p=[random.randint(0,10),random.randint(0,10),random.randint(0,10),random.randint(0,10)]
